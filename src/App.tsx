@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme, Slider, Typography, Button } from '@mui/material';
-import ImageEditor from './components/ImageEditor';
+import './App.css';
+import Camera from './components/Camera';
 import FilmPresets from './components/FilmPresets';
 import { FilmPreset } from './types';
 import useMediaQuery from '@mui/material/useMediaQuery';

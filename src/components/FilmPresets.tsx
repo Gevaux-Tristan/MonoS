@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Box, Card, CardContent, Typography, Grid, useMediaQuery } from '@mui/material';
+import { Box, Card, CardContent, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useSwipeable } from 'react-swipeable';
 
@@ -146,13 +146,13 @@ const FilmPresets: React.FC<FilmPresetsProps> = ({ onSelectPreset, mobileCarouse
   const theme = useTheme();
   const isMobile = mobileCarousel ?? useMediaQuery(theme.breakpoints.down('sm'));
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Centrage automatique de la tuile sélectionnée
   useEffect(() => {
-    if (isMobile && carouselRef.current) {
-      const scrollTo = selectedIndex * (CARD_WIDTH + CARD_GAP) - carouselRef.current.offsetWidth / 2 + CARD_WIDTH / 2;
-      carouselRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    if (isMobile && scrollContainerRef.current) {
+      const scrollTo = selectedIndex * (CARD_WIDTH + CARD_GAP) - scrollContainerRef.current.offsetWidth / 2 + CARD_WIDTH / 2;
+      scrollContainerRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
   }, [selectedIndex, isMobile]);
 
@@ -183,36 +183,26 @@ const FilmPresets: React.FC<FilmPresetsProps> = ({ onSelectPreset, mobileCarouse
     <Box
       sx={{
         width: '100%',
-        maxWidth: 800,
-        mx: 'auto',
-        p: 0,
-        overflowX: isMobile ? 'auto' : 'visible',
-        display: isMobile ? 'flex' : 'block',
-        gap: isMobile ? 2 : 0,
-        py: isMobile ? 1 : 0,
-        minHeight: isMobile ? `${CARD_HEIGHT + 16}px` : undefined,
-        alignItems: isMobile ? 'center' : undefined,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        overflowX: isMobile ? 'auto' : undefined,
         overflowY: isMobile ? 'visible' : undefined,
       }}
-      ref={isMobile ? carouselRef : undefined}
-      {...(isMobile ? swipeHandlers : {})}
     >
       {isMobile ? (
         <Box
-          ref={carouselRef}
+          ref={scrollContainerRef}
           {...swipeHandlers}
           sx={{
-            width: '100%',
             display: 'flex',
-            flexDirection: 'row',
+            gap: `${CARD_GAP}px`,
             overflowX: 'auto',
-            overflowY: 'hidden',
-            gap: 1,
-            minHeight: `${CARD_HEIGHT + 8}px`,
-            maxHeight: `${CARD_HEIGHT + 8}px`,
-            alignItems: 'center',
-            px: 1,
-            WebkitOverflowScrolling: 'touch',
+            scrollSnapType: 'x mandatory',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            padding: '0 16px',
           }}
         >
           {presets.map((preset, idx) => (
@@ -260,7 +250,13 @@ const FilmPresets: React.FC<FilmPresetsProps> = ({ onSelectPreset, mobileCarouse
           ))}
         </Box>
       ) : (
-        <Box sx={{ width: '100%' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+          }}
+        >
           {presets.map((preset, idx) => (
             <Card
               key={preset.name}

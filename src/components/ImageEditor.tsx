@@ -9,7 +9,6 @@ interface ImageEditorProps {
 }
 
 const ImageEditor: React.FC<ImageEditorProps> = ({ image, onSave, selectedPreset }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [grain, setGrain] = useState(0);
@@ -22,14 +21,6 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ image, onSave, selectedPreset
       setGrain(selectedPreset.grain);
     }
   }, [selectedPreset]);
-
-  // Fonction pour générer du bruit gaussien
-  const gaussianNoise = (mean: number, std: number) => {
-    let u = 0, v = 0;
-    while (u === 0) u = Math.random();
-    while (v === 0) v = Math.random();
-    return mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-  };
 
   const applyFilmEffect = (imageData: ImageData, preset: FilmPreset) => {
     const { data } = imageData;
