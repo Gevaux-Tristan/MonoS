@@ -25,7 +25,7 @@ Biwi is a modern web application dedicated to black and white photography. It pr
 ## Technical Details
 
 - Built with React and TypeScript
-- Uses Material-UI for the interface
+- Uses IBM's Carbon for the interface
 - Client-side image processing
 - Mobile-first design
 - Dark theme optimized for photo editing
