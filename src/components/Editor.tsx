@@ -229,6 +229,11 @@ const PresetCard = styled(Paper)(({ theme }) => ({
   }
 }));
 
+// Create a worker instance
+const worker = new Worker(new URL('../workers/imageProcessor.ts', import.meta.url), { type: 'module' });
+
+const MAX_IMAGE_SIZE = 2048; // Maximum dimension for processing
+
 const Editor: React.FC = () => {
   const [image, setImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -244,85 +249,97 @@ const Editor: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const processImage = useCallback(() => {
-    if (!canvasRef.current || !imageRef.current) return;
+  // Function to resize image if needed
+  const resizeImage = (img: HTMLImageElement): HTMLCanvasElement => {
+    const canvas = document.createElement('canvas');
+    let width = img.naturalWidth;
+    let height = img.naturalHeight;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size to match image
-    canvas.width = imageRef.current.naturalWidth;
-    canvas.height = imageRef.current.naturalHeight;
-
-    // Draw original image
-    ctx.drawImage(imageRef.current, 0, 0);
-
-    // Get image data
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    // Convert to grayscale and apply effects
-    for (let i = 0; i < data.length; i += 4) {
-      // Convert to grayscale
-      const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
-      
-      // Apply brightness
-      let value = gray * (1 + settings.brightness / 100);
-      
-      // Apply contrast
-      value = ((value - 128) * (1 + settings.contrast / 100)) + 128;
-      
-      // Apply grain
-      if (settings.grain > 0) {
-        const noise = (Math.random() - 0.5) * settings.grain;
-        value += noise;
-      }
-      
-      // Clamp values
-      value = Math.min(255, Math.max(0, value));
-
-      // Apply tint if present in settings
-      if (settings.tint) {
-        const tintColor = settings.tint.color;
-        const intensity = settings.tint.intensity / 100;
-        
-        // Parse tint color
-        const r = parseInt(tintColor.slice(1, 3), 16);
-        const g = parseInt(tintColor.slice(3, 5), 16);
-        const b = parseInt(tintColor.slice(5, 7), 16);
-        
-        // Mix the grayscale value with the tint color
-        data[i] = Math.min(255, Math.max(0, value * (1 - intensity) + r * intensity));
-        data[i + 1] = Math.min(255, Math.max(0, value * (1 - intensity) + g * intensity));
-        data[i + 2] = Math.min(255, Math.max(0, value * (1 - intensity) + b * intensity));
+    // Calculate new dimensions if image is too large
+    if (width > MAX_IMAGE_SIZE || height > MAX_IMAGE_SIZE) {
+      if (width > height) {
+        height = Math.round((height * MAX_IMAGE_SIZE) / width);
+        width = MAX_IMAGE_SIZE;
       } else {
-        // Set RGB channels to the same value for B&W
-        data[i] = data[i + 1] = data[i + 2] = value;
+        width = Math.round((width * MAX_IMAGE_SIZE) / height);
+        height = MAX_IMAGE_SIZE;
       }
     }
 
-    // Put processed image data back
-    ctx.putImageData(imageData, 0, 0);
-    setProcessedImage(canvas.toDataURL('image/jpeg', 0.9));
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx?.drawImage(img, 0, 0, width, height);
+    return canvas;
+  };
+
+  const processImage = useCallback(() => {
+    if (!canvasRef.current || !imageRef.current) return;
+
+    const resizedCanvas = resizeImage(imageRef.current);
+    const ctx = resizedCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set the canvas ref dimensions to match the resized image
+    canvasRef.current.width = resizedCanvas.width;
+    canvasRef.current.height = resizedCanvas.height;
+
+    // Get image data
+    const imageData = ctx.getImageData(0, 0, resizedCanvas.width, resizedCanvas.height);
+
+    // Process image in worker
+    worker.postMessage({ 
+      imageData, 
+      settings,
+      width: resizedCanvas.width,
+      height: resizedCanvas.height 
+    });
   }, [settings]);
 
-  // Use requestAnimationFrame to batch rapid updates for instant preview
-  const rafRef = useRef<number | null>(null);
+  // Handle worker response
+  useEffect(() => {
+    const handleWorkerMessage = (e: MessageEvent) => {
+      if (!canvasRef.current) return;
+      
+      const { processedData, width, height } = e.data;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Ensure canvas dimensions match the processed image
+      canvas.width = width;
+      canvas.height = height;
+
+      // Create new ImageData with processed data
+      const imageData = new ImageData(
+        new Uint8ClampedArray(processedData),
+        width,
+        height
+      );
+
+      // Put processed image data back
+      ctx.putImageData(imageData, 0, 0);
+      setProcessedImage(canvas.toDataURL('image/jpeg', 0.9));
+    };
+
+    worker.addEventListener('message', handleWorkerMessage);
+    return () => worker.removeEventListener('message', handleWorkerMessage);
+  }, []);
+
+  // Use debounced updates for rapid changes
   useEffect(() => {
     if (!image) return;
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      const img = new window.Image();
+    
+    const timeoutId = setTimeout(() => {
+      const img = new Image();
       img.onload = () => {
         imageRef.current = img;
         processImage();
       };
       img.src = image;
-    });
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    }, 150); // Debounce time
+
+    return () => clearTimeout(timeoutId);
   }, [image, processImage]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -668,6 +685,33 @@ const Editor: React.FC = () => {
               </Box>
             </Stack>
           </Paper>
+
+          {/* Export Button */}
+          {processedImage && (
+            <Paper sx={{ 
+              p: { xs: 1, sm: 3 }, 
+              width: { xs: '100%', md: '80%' }, 
+              maxWidth: '100%', 
+              overflowX: 'hidden', 
+              mt: 2, 
+              mb: 3, 
+              mx: { xs: 0, md: 'auto' },
+              bgcolor: '#f5f5f5'
+            }}>
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={handleSave}
+                sx={{ 
+                  fontWeight: 600,
+                  py: { xs: 1, sm: 1.5 }
+                }}
+              >
+                Export Image
+              </Button>
+            </Paper>
+          )}
         </Grid>
       </Grid>
 
