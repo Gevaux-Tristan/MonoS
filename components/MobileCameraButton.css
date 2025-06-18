@@ -1,33 +1,52 @@
 .mobile-camera-button-container {
   display: none; /* Hidden by default */
-}
-
-.mobile-camera-button {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  z-index: 1000;
+  /* Use transform for better performance */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.mobile-camera-button {
   width: 56px;
   height: 56px;
   border-radius: 50%;
   background-color: #000;
   color: #fff;
   border: none;
+  /* Optimize box-shadow for performance */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1000;
-  transition: transform 0.2s ease;
+  /* Use transform for better performance */
+  transform: translateZ(0);
+  will-change: transform;
+  /* Optimize touch handling */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  /* Hardware acceleration */
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 .mobile-camera-button:active {
-  transform: scale(0.95);
+  transform: scale(0.95) translateZ(0);
 }
 
 /* Show the button only on mobile devices */
 @media (max-width: 768px) {
   .mobile-camera-button-container {
     display: block;
+  }
+}
+
+/* Optimize for high-DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .mobile-camera-button {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 } 
