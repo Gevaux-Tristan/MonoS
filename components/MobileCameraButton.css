@@ -1,9 +1,9 @@
 .mobile-camera-button-container {
   display: none; /* Hidden by default */
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
+  position: relative; /* Changed from fixed to relative */
+  width: 100%;
+  max-width: 300px; /* Limit width on larger screens */
+  margin: 0 auto;
   /* Use transform for better performance */
   transform: translateZ(0);
   will-change: transform;

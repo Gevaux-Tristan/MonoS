@@ -27,8 +27,17 @@ const App = () => {
           </div>
         )}
         
-        {/* Mobile camera button will only show on mobile devices */}
-        <MobileCameraButton onPhotoCapture={handlePhotoCapture} />
+        <div className="controls-container">
+          {/* Mobile camera button positioned above presets */}
+          <div className="camera-button-wrapper">
+            <MobileCameraButton onPhotoCapture={handlePhotoCapture} />
+          </div>
+          
+          {/* Preset selection would go here */}
+          <div className="presets-container">
+            {/* Your preset components would go here */}
+          </div>
+        </div>
       </main>
     </div>
   );
