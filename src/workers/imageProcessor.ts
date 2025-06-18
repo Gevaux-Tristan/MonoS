@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+
 interface ImageProcessingSettings {
   contrast: number;
   brightness: number;
@@ -52,22 +54,31 @@ const processImageData = (data: Uint8ClampedArray, settings: ImageProcessingSett
         // Set all channels to the same value for B&W
         data[j] = data[j + 1] = data[j + 2] = value;
       }
+      
+      // Alpha channel should always be 255
+      data[j + 3] = 255;
     }
   }
   
   return data;
 };
 
+// Web Worker context type declaration
+declare const self: DedicatedWorkerGlobalScope;
+
 // Web Worker message handler
 self.onmessage = (e: MessageEvent) => {
   const { imageData, settings, width, height } = e.data;
   
+  // Create a new Uint8ClampedArray from the received data
+  const inputArray = new Uint8ClampedArray(imageData.data);
+  
   // Process the image data
-  const processedData = processImageData(imageData.data, settings);
+  const processedData = processImageData(inputArray, settings);
   
   // Send back the processed data with dimensions
   self.postMessage({ 
-    processedData,
+    processedData: Array.from(processedData), // Convert to regular array for transfer
     width,
     height
   });

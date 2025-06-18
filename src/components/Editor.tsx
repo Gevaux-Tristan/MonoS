@@ -229,8 +229,9 @@ const PresetCard = styled(Paper)(({ theme }) => ({
   }
 }));
 
-// Create a worker instance
-const worker = new Worker(new URL('../workers/imageProcessor.ts', import.meta.url), { type: 'module' });
+// Create a worker instance with proper URL handling for production
+const workerUrl = new URL('../workers/imageProcessor.ts', import.meta.url);
+const worker = new Worker(workerUrl, { type: 'module' });
 
 const MAX_IMAGE_SIZE = 2048; // Maximum dimension for processing
 
@@ -246,7 +247,6 @@ const Editor: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Function to resize image if needed
