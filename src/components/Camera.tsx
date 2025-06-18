@@ -1,64 +1,43 @@
-import React, { useRef, useState } from 'react';
-import { Box, Button } from '@mui/material';
+import React, { useRef, useCallback } from 'react';
 import Webcam from 'react-webcam';
+import { Box, Button } from '@mui/material';
 
 interface CameraProps {
-  onCapture: (image: string) => void;
+  onCapture: () => void;
+  onClose: () => void;
 }
 
-const Camera: React.FC<CameraProps> = ({ onCapture }) => {
+const Camera: React.FC<CameraProps> = ({ onCapture, onClose }) => {
   const webcamRef = useRef<Webcam>(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
 
-  const handleCapture = () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (imageSrc) {
-        onCapture(imageSrc);
-        setIsCameraActive(false);
-      }
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (imageSrc) {
+      onCapture();
     }
-  };
+  }, [onCapture]);
 
   return (
-    <Box sx={{ width: '100%', textAlign: 'center' }}>
-      {!isCameraActive ? (
-        <Button
-          variant="contained"
-          onClick={() => setIsCameraActive(true)}
-          fullWidth
-          sx={{ py: 2 }}
-        >
-          Take Photo
+    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+      <Webcam
+        audio={false}
+        ref={webcamRef}
+        screenshotFormat="image/jpeg"
+        videoConstraints={{
+          width: 1280,
+          height: 720,
+          facingMode: "user"
+        }}
+        style={{ width: '100%', maxHeight: 400, borderRadius: 8 }}
+      />
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Button variant="contained" color="primary" onClick={capture}>
+          Capture
         </Button>
-      ) : (
-        <Box sx={{ position: 'relative' }}>
-          <Webcam
-            ref={webcamRef}
-            screenshotFormat="image/jpeg"
-            videoConstraints={{
-              facingMode: 'user',
-            }}
-            style={{ width: '100%', maxWidth: 600, borderRadius: 8 }}
-          />
-          <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
-            <Button
-              variant="contained"
-              onClick={handleCapture}
-              color="primary"
-            >
-              Capture
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setIsCameraActive(false)}
-              color="secondary"
-            >
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      )}
+        <Button variant="outlined" color="secondary" onClick={onClose}>
+          Annuler
+        </Button>
+      </Box>
     </Box>
   );
 };

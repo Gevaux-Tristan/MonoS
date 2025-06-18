@@ -5,18 +5,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/MonoS/',
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 100
     },
-  },
-  resolve: {
-    alias: {
-      '@': '/src',
+    hmr: {
+      overlay: true,
+      timeout: 1000
     },
-  },
+    open: true,
+    host: true
+  }
 }) 
